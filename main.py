@@ -7,10 +7,10 @@ st.title("Chinese Text Grid with Customizable 9-Square Background Borders")
 user_input = st.text_area("Enter Chinese text:", height=100, placeholder="输入中文文本...")
 
 # Step 2: Font size slider (default set to 33px)
-font_size = st.slider("Adjust Font Size (px):", min_value=12, max_value=50, value=33)
+font_size = st.slider("Adjust Font Size (px):", min_value=12, max_value=50, value=42)
 
 # Step 3: Text color input
-text_color = st.text_input("Enter Text Color (name or hex code):", value="#000000")  # Default to black
+text_color = st.color_picker("Enter Text Color (name or hex code):", value="#000000")  # Default to black
 
 # Step 4: Font family selection (default set to FangSong)
 font_family = st.selectbox(
@@ -23,20 +23,20 @@ font_family = st.selectbox(
 font_weight = st.selectbox(
     "Select Font Weight:",
     options=["normal", "bold", "lighter", "bolder", "100", "200", "300", "400", "500", "600", "700", "800", "900"],
-    index=2,  # Default to lighter
+    index=0,  # Default to lighter
 )
 
 # Step 6: Option to display unique characters only
 unique_option = st.radio(
     "Display Options:",
     options=["All Characters", "Unique Characters Only"],
-    index=0,  # Default to showing all characters
+    index=1,  # Default to showing all characters
 )
 
 # Step 7: Border thickness input for sub-items (allows fractional values like 0.5px)
 border_thickness = st.text_input(
     "Enter Border Thickness (px):",
-    value="1px"  # Default to 1px
+    value="0.5px"  # Default to 1px
 )
 
 # Validate and sanitize border thickness input
@@ -47,10 +47,10 @@ try:
     float(border_thickness.replace("px", ""))  # Check if it's a valid number
 except ValueError:
     st.error("Invalid border thickness! Please enter a valid number followed by 'px' (e.g., '0.5px').")
-    border_thickness = "1px"  # Fallback to default
+    border_thickness = "0.5px"  # Fallback to default
 
 # Step 8: Border color input for sub-items
-border_color = st.text_input("Enter Border Color (name or hex code):", value="#cccccc")  # Default to light gray
+border_color = st.color_picker("Enter Border Color (name or hex code):", value="#ffdede")  # Default to red semi-transparent
 
 # Step 9: Display the text as a grid with styled tiles
 if user_input:
@@ -58,8 +58,10 @@ if user_input:
     if unique_option == "Unique Characters Only":
         seen = set()
         characters = [char for char in user_input if not (char in seen or seen.add(char))]  # Preserve order of unique characters
+        st.write("Unique characters: ", len(characters))
     else:
         characters = list(user_input.replace("\n", ""))  # Keep all characters and remove line breaks
+        st.write("Characters: ", len(characters))
     
     # Define CSS for the grid and nested grid styling
     st.markdown(
@@ -70,7 +72,7 @@ if user_input:
         .grid-container {{
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-            gap: 10px;
+            gap: 5px;
             justify-items: center;
             align-items: center;
         }}
@@ -81,7 +83,7 @@ if user_input:
             display: grid;
             grid-template-columns: repeat(3, 1fr); /* Divide into 3x3 squares */
             grid-template-rows: repeat(3, 1fr);
-            border: 2px solid #4CAF50; /* Green border */
+            border: 1px solidrgb(0, 0, 0); /* Green border */
             background-color: #f9f9f9; /* Light grey background */
             position: relative; /* For centering the character */
         }}
