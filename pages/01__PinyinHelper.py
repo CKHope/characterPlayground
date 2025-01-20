@@ -109,7 +109,7 @@ def format_with_line_breaks_and_numbers(text):
             char_count = count_characters(current_sentence)
             if i+1 < len(sentences):  # Add the punctuation back
                 current_sentence += sentences[i+1]
-                char_count = count_characters(current_sentence)
+                # char_count = count_characters(current_sentence)
             current_group.append(current_sentence)
             
             # When we have 3 sentences or it's the last group
