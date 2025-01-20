@@ -121,7 +121,7 @@ if input_text:
     
     # Display regular output
     st.subheader("Result:")
-    st.markdown(output_text)
+    st.markdown(output_text,unsafe_allow_html=True)
     
     # Calculate total character count
     total_chars = count_characters(input_text)
