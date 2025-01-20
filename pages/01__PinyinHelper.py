@@ -1,5 +1,5 @@
 """
-Chinese to Abbreviated Pinyin Converter - Version 1.0
+Chinese to Abbreviated Pinyin Converter - Version 1.1
 Features:
 - Converts Chinese characters to abbreviated pinyin
 - Shows double consonants (ch, sh, zh) in blue
@@ -7,12 +7,18 @@ Features:
 - Displays character count for each section (counting original Chinese characters)
 - Shows total character count
 - Consistent styling with fixed-width character count displays
+New in 1.1:
+- Added Kangxi radical conversion with preserved punctuation
 """
 
 import streamlit as st
 from pypinyin import pinyin, Style
 import string
 import re
+from hanzipy import HanziPy
+
+# Initialize HanziPy
+hanzi = HanziPy()
 
 def get_abbreviated_pinyin_with_color_break(char):
     # Get pinyin for the character (taking first pronunciation)
@@ -44,6 +50,17 @@ def get_abbreviated_pinyin_with_color(char):
     else:
         return pin[0]
 
+def get_radical(char):
+    try:
+        # Get radical for Chinese character
+        if '\u4e00' <= char <= '\u9fff':
+            radical = hanzi.get_radical(char)
+            return radical
+        else:
+            return char
+    except:
+        return char
+
 def convert_text(text, type=1):
     result = []
     for char in text:
@@ -54,9 +71,12 @@ def convert_text(text, type=1):
             if type == 1:
                 # Get abbreviated pinyin with color formatting
                 result.append(get_abbreviated_pinyin_with_color_break(char))
-            if type == 0:
+            elif type == 0:
                 # Get abbreviated pinyin with color formatting
                 result.append(get_abbreviated_pinyin_with_color(char))
+            elif type == 2:
+                # Get radical
+                result.append(get_radical(char))
     return "".join(result)
 
 def count_chinese_characters(text):
@@ -154,18 +174,27 @@ st.title("Chinese to Abbreviated Pinyin Converter")
 input_text = st.text_area("Enter Chinese text:", "")
 
 if input_text:
-    # Convert text
-    output_text = convert_text(input_text,0)
+    # Convert text for Result section
+    output_text = convert_text(input_text, 0)
     
     # Display regular output
     st.subheader("Result:")
-    st.markdown(output_text,unsafe_allow_html=True)
+    st.markdown(output_text, unsafe_allow_html=True)
     
-    output_text = convert_text(input_text,1)
+    # Convert text for Pinyin helper
+    output_text_pinyin = convert_text(input_text, 1)
     # Calculate total character count
     total_chars = count_chinese_characters(input_text)
     
-    # Display output with line breaks and styled paragraph numbers
+    # Display Pinyin helper output
     st.markdown(f"### Recite helper - Pinyin <span class='total-count'>({total_chars} chars)</span>", unsafe_allow_html=True)
-    formatted_output = format_with_line_breaks_and_numbers(output_text, input_text)
+    formatted_output = format_with_line_breaks_and_numbers(output_text_pinyin, input_text)
     st.markdown(formatted_output, unsafe_allow_html=True)
+    
+    # Convert text for Radical helper
+    output_text_radical = convert_text(input_text, 2)
+    
+    # Display Radical helper output
+    st.markdown(f"### Recite helper - Radical <span class='total-count'>({total_chars} chars)</span>", unsafe_allow_html=True)
+    formatted_output_radical = format_with_line_breaks_and_numbers(output_text_radical, input_text)
+    st.markdown(formatted_output_radical, unsafe_allow_html=True)
