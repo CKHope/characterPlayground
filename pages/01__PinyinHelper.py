@@ -60,6 +60,8 @@ def format_with_line_breaks_and_numbers(text):
             margin-right: 10px;
             font-size: 0.9em;
             display: inline-block;
+            width: 70px;
+            text-align: center;
         }
         .total-count {
             color: #8B0000;
@@ -68,6 +70,7 @@ def format_with_line_breaks_and_numbers(text):
         .label-group {
             display: inline-flex;
             margin-right: 10px;
+            align-items: center;
         }
         </style>
     """, unsafe_allow_html=True)
