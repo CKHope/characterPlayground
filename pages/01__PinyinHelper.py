@@ -108,13 +108,13 @@ def format_with_line_breaks_and_numbers(text):
             current_sentence = sentences[i]
             if i+1 < len(sentences):  # Add the punctuation back
                 current_sentence += sentences[i+1]
-            
+                char_count = count_characters(current_sentence)
             current_group.append(current_sentence)
             
             # When we have 3 sentences or it's the last group
             if len(current_group) == 3 or i >= len(sentences)-2:
                 group_text = ''.join(current_group)
-                char_count = count_characters(group_text)
+                # char_count = count_characters(group_text)
                 
                 # Create paragraph number and character count with HTML styling
                 formatted_text += f"""<span class="label-group">
