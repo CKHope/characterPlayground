@@ -15,10 +15,12 @@ import streamlit as st
 from pypinyin import pinyin, Style
 import string
 import re
-from hanzipy import HanziPy
+from hanzipy.decomposer import HanziDecomposer
+from hanzipy.dictionary import HanziDictionary
 
-# Initialize HanziPy
-hanzi = HanziPy()
+# Initialize the decomposer and dictionary
+decomposer = HanziDecomposer()
+dictionary = HanziDictionary()
 
 def get_abbreviated_pinyin_with_color_break(char):
     # Get pinyin for the character (taking first pronunciation)
@@ -54,8 +56,10 @@ def get_radical(char):
     try:
         # Get radical for Chinese character
         if '\u4e00' <= char <= '\u9fff':
-            radical = hanzi.get_radical(char)
-            return radical
+            radical_info = dictionary.get_radical(char)
+            if radical_info:
+                return radical_info
+            return char
         else:
             return char
     except:
