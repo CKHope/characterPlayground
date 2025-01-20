@@ -56,14 +56,19 @@ def get_radical(char):
     try:
         # Get radical for Chinese character
         if '\u4e00' <= char <= '\u9fff':
-            radical_info = dictionary.get_radical(char)
-            if radical_info:
-                return radical_info
+            # Get radical info using dictionary module
+            radical_info = dictionary.get_radical_info(char)
+            if radical_info and 'radical' in radical_info:
+                return radical_info['radical']
+            # If no radical found, return original character
             return char
         else:
+            # Return non-Chinese characters as is
             return char
     except:
+        # Return original character if any error occurs
         return char
+
 
 def convert_text(text, type=1):
     result = []
