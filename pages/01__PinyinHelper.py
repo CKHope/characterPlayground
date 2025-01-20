@@ -9,6 +9,7 @@ def get_abbreviated_pinyin_with_color(char):
     
     # Check if pinyin starts with zh, ch, sh
     if pin.startswith(('zh', 'ch', 'sh')):
+        # Remove the :blue[] syntax and use HTML span instead
         return f'<span style="color: blue">{pin[:2]}</span>'
     # If starts with vowel, return first letter
     elif pin[0] in 'aeiou':
@@ -16,6 +17,7 @@ def get_abbreviated_pinyin_with_color(char):
     # Otherwise return first consonant
     else:
         return pin[0]
+
 
 def convert_text(text):
     result = []
@@ -27,6 +29,10 @@ def convert_text(text):
             # Get abbreviated pinyin with color formatting
             result.append(get_abbreviated_pinyin_with_color(char))
     return "".join(result)
+
+def count_characters(text):
+    # Count characters excluding spaces and punctuation
+    return len([char for char in text if char not in string.punctuation and not char.isspace()])
 
 def format_with_line_breaks_and_numbers(text):
     # Split text into sentences
@@ -112,6 +118,10 @@ input_text = st.text_area("Enter Chinese text:", "")
 if input_text:
     # Convert text
     output_text = convert_text(input_text)
+    
+    # Display regular output
+    st.subheader("Result:")
+    st.markdown(output_text)
     
     # Calculate total character count
     total_chars = count_characters(input_text)
