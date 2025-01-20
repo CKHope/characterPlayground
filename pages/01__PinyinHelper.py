@@ -55,7 +55,7 @@ def count_characters(text):
 def format_with_line_breaks_and_numbers(text):
     # Split text into sentences
     sentences = re.split('([。！？\.\!\?][\s\n]*)', text)
-    
+    st.write(sentences)
     # Group sentences into chunks of 3 and add paragraph numbers
     formatted_text = ""
     current_group = []
