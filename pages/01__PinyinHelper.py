@@ -1,3 +1,14 @@
+"""
+Chinese to Abbreviated Pinyin Converter - Version 1.0
+Features:
+- Converts Chinese characters to abbreviated pinyin
+- Shows double consonants (ch, sh, zh) in blue
+- Groups text into sections of 3 sentences
+- Displays character count for each section (counting original Chinese characters)
+- Shows total character count
+- Consistent styling with fixed-width character count displays
+"""
+
 import streamlit as st
 from pypinyin import pinyin, Style
 import string
