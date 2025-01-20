@@ -17,6 +17,7 @@ import string
 import re
 from hanzipy.decomposer import HanziDecomposer
 from hanzipy.dictionary import HanziDictionary
+from utils import returnCharRadical
 
 # Initialize the decomposer and dictionary
 decomposer = HanziDecomposer()
@@ -52,24 +53,6 @@ def get_abbreviated_pinyin_with_color(char):
     else:
         return pin[0]
 
-def get_radical(char):
-    try:
-        # Get radical for Chinese character
-        if '\u4e00' <= char <= '\u9fff':
-            # Get radical info using dictionary module
-            radical_info = dictionary.get_radical_info(char)
-            if radical_info and 'radical' in radical_info:
-                return radical_info['radical']
-            # If no radical found, return original character
-            return char
-        else:
-            # Return non-Chinese characters as is
-            return char
-    except:
-        # Return original character if any error occurs
-        return char
-
-
 def convert_text(text, type=1):
     result = []
     for char in text:
@@ -85,7 +68,7 @@ def convert_text(text, type=1):
                 result.append(get_abbreviated_pinyin_with_color(char))
             elif type == 2:
                 # Get radical
-                result.append(get_radical(char))
+                result.append(returnCharRadical(char))
     return "".join(result)
 
 def count_chinese_characters(text):
