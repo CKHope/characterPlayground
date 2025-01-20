@@ -9,7 +9,7 @@ def get_abbreviated_pinyin_with_color(char):
     
     # Check if pinyin starts with zh, ch, sh
     if pin.startswith(('zh', 'ch', 'sh')):
-        return f":blue[{pin[:2]}]"  # Wrap in Streamlit color syntax
+        return pin[:2]  # Return without color formatting since it will be handled in convert_text
     # If starts with vowel, return first letter
     elif pin[0] in 'aeiou':
         return pin[0]
@@ -19,13 +19,21 @@ def get_abbreviated_pinyin_with_color(char):
 
 def convert_text(text):
     result = []
-    for char in text:
-        # If character is punctuation, keep it as is
-        if char in string.punctuation or char.isspace():
-            result.append(char)
+    i = 0
+    while i < len(text):
+        if text[i] in string.punctuation or text[i].isspace():
+            result.append(text[i])
+            i += 1
         else:
-            # Get abbreviated pinyin with color formatting
-            result.append(get_abbreviated_pinyin_with_color(char))
+            # Get abbreviated pinyin
+            pin = get_abbreviated_pinyin_with_color(text[i])
+            
+            # Check if it's a double consonant (ch, sh, zh) and color it blue
+            if len(pin) == 2:
+                result.append(f":blue[{pin}]")
+            else:
+                result.append(pin)
+            i += 1
     return "".join(result)
 
 def count_characters(text):
@@ -71,7 +79,7 @@ def format_with_line_breaks_and_numbers(text):
             line-height: 20px;
         }
         .total-count {
-            color: #8B0000;
+            color: #FF0000;
             font-weight: bold;
         }
         .label-group {
@@ -117,14 +125,10 @@ if input_text:
     # Convert text
     output_text = convert_text(input_text)
     
-    # Display regular output
-    st.subheader("Result:")
-    st.markdown(output_text)
-    
     # Calculate total character count
     total_chars = count_characters(input_text)
     
     # Display output with line breaks and styled paragraph numbers
-    st.markdown(f"### Recite helper - Pinyin <span class='total-count'>({total_chars} chars)</span>", unsafe_allow_html=True)
+    st.markdown(f"# Recite helper - Pinyin ({total_chars} chars)", unsafe_allow_html=True)
     formatted_output = format_with_line_breaks_and_numbers(output_text)
     st.markdown(formatted_output, unsafe_allow_html=True)
