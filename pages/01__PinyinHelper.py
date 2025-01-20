@@ -25,7 +25,7 @@ def get_abbreviated_pinyin_with_color(char):
     # Check if pinyin starts with zh, ch, sh
     if pin.startswith(('zh', 'ch', 'sh')):
         # Remove the :blue[] syntax and use HTML span instead
-        return f':blue[{pin[:2]}]'
+        return f':DarkTurquoise[{pin[:2]}]'
     # If starts with vowel, return first letter
     elif pin[0] in 'aeiou':
         return pin[0]
