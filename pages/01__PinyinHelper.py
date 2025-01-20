@@ -47,21 +47,28 @@ def format_with_line_breaks_and_numbers(text):
         .paragraph-number {
             background-color: #8B0000;
             color: white;
-            padding: 2px 6px;
+            padding: 4px 6px;
             border-radius: 3px 0 0 3px;
             margin-right: 0;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            height: 20px;
+            line-height: 20px;
+            font-size: 0.9em;
         }
         .char-count {
             background-color: #00008B;
             color: white;
-            padding: 2px 6px;
+            padding: 4px 6px;
             border-radius: 0 3px 3px 0;
             margin-right: 10px;
             font-size: 0.9em;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
             width: 70px;
-            text-align: center;
+            justify-content: center;
+            height: 20px;
+            line-height: 20px;
         }
         .total-count {
             color: #8B0000;
@@ -71,6 +78,7 @@ def format_with_line_breaks_and_numbers(text):
             display: inline-flex;
             margin-right: 10px;
             align-items: center;
+            height: 20px;
         }
         </style>
     """, unsafe_allow_html=True)
