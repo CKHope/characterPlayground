@@ -37,6 +37,19 @@ def format_with_line_breaks_and_numbers(text):
     current_group = []
     paragraph_number = 1
     
+    # Custom CSS for paragraph numbers
+    st.markdown("""
+        <style>
+        .paragraph-number {
+            background-color: #8B0000;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     for i in range(0, len(sentences), 2):  # Step by 2 because split keeps delimiters
         if i < len(sentences):
             current_sentence = sentences[i]
@@ -47,8 +60,9 @@ def format_with_line_breaks_and_numbers(text):
             
             # When we have 3 sentences or it's the last group
             if len(current_group) == 3 or i >= len(sentences)-2:
-                paragraph_mark = f"P{paragraph_number:02d}: "  # Format as P01, P02, etc.
-                formatted_text += paragraph_mark + "".join(current_group) + "\n\n"
+                # Create paragraph number with HTML styling
+                paragraph_mark = f'<span class="paragraph-number">P{paragraph_number:02d}</span>'
+                formatted_text += f"{paragraph_mark} {''.join(current_group)}<br><br>"
                 current_group = []
                 paragraph_number += 1
     
@@ -68,7 +82,7 @@ if input_text:
     st.subheader("Result:")
     st.markdown(output_text)
     
-    # Display output with line breaks and paragraph numbers
+    # Display output with line breaks and styled paragraph numbers
     st.subheader("Result with line breaks (every 3 sentences):")
     formatted_output = format_with_line_breaks_and_numbers(output_text)
-    st.markdown(formatted_output)
+    st.markdown(formatted_output, unsafe_allow_html=True)
