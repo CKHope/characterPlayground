@@ -9,13 +9,15 @@ def get_abbreviated_pinyin_with_color(char):
     
     # Check if pinyin starts with zh, ch, sh
     if pin.startswith(('zh', 'ch', 'sh')):
-        return f":blue[{pin[:2]}]"  # Wrap in Streamlit color syntax
+        # Remove the :blue[] syntax and use HTML span instead
+        return f'<span style="color: blue">{pin[:2]}</span>'
     # If starts with vowel, return first letter
     elif pin[0] in 'aeiou':
         return pin[0]
     # Otherwise return first consonant
     else:
         return pin[0]
+
 
 def convert_text(text):
     result = []
