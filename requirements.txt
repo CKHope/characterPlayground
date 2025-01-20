@@ -2,3 +2,5 @@ streamlit
 pandas
 pypinyin
 hanzipy
+cjkradlib
+pinyin
