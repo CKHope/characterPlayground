@@ -15,13 +15,8 @@ import streamlit as st
 from pypinyin import pinyin, Style
 import string
 import re
-from hanzipy.decomposer import HanziDecomposer
-from hanzipy.dictionary import HanziDictionary
 from utils import returnCharRadical
 
-# Initialize the decomposer and dictionary
-decomposer = HanziDecomposer()
-dictionary = HanziDictionary()
 
 def get_abbreviated_pinyin_with_color_break(char):
     # Get pinyin for the character (taking first pronunciation)
