@@ -124,7 +124,7 @@ def format_with_line_breaks_and_numbers(text):
                 
                 current_group = []
                 paragraph_number += 1
-    st.write(current_group)
+                
     return formatted_text.strip()  # Remove trailing whitespace
 
 # Create Streamlit interface
