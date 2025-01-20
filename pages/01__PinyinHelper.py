@@ -48,20 +48,26 @@ def format_with_line_breaks_and_numbers(text):
             background-color: #8B0000;
             color: white;
             padding: 2px 6px;
-            border-radius: 3px;
-            margin-right: 5px;
+            border-radius: 3px 0 0 3px;
+            margin-right: 0;
+            display: inline-block;
         }
         .char-count {
             background-color: #00008B;
             color: white;
             padding: 2px 6px;
-            border-radius: 3px;
+            border-radius: 0 3px 3px 0;
             margin-right: 10px;
             font-size: 0.9em;
+            display: inline-block;
         }
         .total-count {
             color: #8B0000;
             font-weight: bold;
+        }
+        .label-group {
+            display: inline-flex;
+            margin-right: 10px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -80,10 +86,11 @@ def format_with_line_breaks_and_numbers(text):
                 char_count = count_characters(group_text)
                 
                 # Create paragraph number and character count with HTML styling
-                paragraph_mark = f'<span class="paragraph-number">P{paragraph_number:02d}</span>'
-                count_display = f'<span class="char-count">{char_count} chars</span>'
+                formatted_text += f"""<span class="label-group">
+                    <span class="paragraph-number">P{paragraph_number:02d}</span
+                    ><span class="char-count">{char_count} chars</span>
+                </span>{group_text}<br><br>"""
                 
-                formatted_text += f"{paragraph_mark}{count_display}{group_text}<br><br>"
                 current_group = []
                 paragraph_number += 1
     
