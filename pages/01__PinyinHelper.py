@@ -106,6 +106,7 @@ def format_with_line_breaks_and_numbers(text):
     for i in range(0, len(sentences), 2):  # Step by 2 because split keeps delimiters
         if i < len(sentences):
             current_sentence = sentences[i]
+            char_count = count_characters(current_sentence)
             if i+1 < len(sentences):  # Add the punctuation back
                 current_sentence += sentences[i+1]
                 char_count = count_characters(current_sentence)
