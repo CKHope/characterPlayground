@@ -1,6 +1,7 @@
 import streamlit as st
 from pypinyin import pinyin, Style
 import string
+import re
 
 def get_abbreviated_pinyin_with_color(char):
     # Get pinyin for the character (taking first pronunciation)
@@ -27,6 +28,24 @@ def convert_text(text):
             result.append(get_abbreviated_pinyin_with_color(char))
     return "".join(result)
 
+def format_with_line_breaks(text):
+    # Split text into sentences (looking for period, question mark, or exclamation mark followed by space or newline)
+    sentences = re.split('([。！？\.\!\?][\s\n]*)', text)
+    
+    # Rejoin sentences and add line break after every 3 sentences
+    formatted_text = ""
+    for i in range(0, len(sentences), 2):  # Step by 2 because split keeps delimiters
+        if i < len(sentences):
+            formatted_text += sentences[i]
+            if i+1 < len(sentences):  # Add the punctuation back
+                formatted_text += sentences[i+1]
+            
+            # Add double line break after every 3 sentences
+            if (i//2 + 1) % 3 == 0 and i < len(sentences)-2:
+                formatted_text += "\n\n"
+    
+    return formatted_text
+
 # Create Streamlit interface
 st.title("Chinese to Abbreviated Pinyin Converter")
 
@@ -34,7 +53,14 @@ st.title("Chinese to Abbreviated Pinyin Converter")
 input_text = st.text_area("Enter Chinese text:", "")
 
 if input_text:
-    # Convert and display result
+    # Convert text
     output_text = convert_text(input_text)
+    
+    # Display regular output
     st.subheader("Result:")
-    st.markdown(output_text)  # Using markdown instead of text to render colored text
+    st.markdown(output_text)
+    
+    # Display output with line breaks after every 3 sentences
+    st.subheader("Result with line breaks (every 3 sentences):")
+    formatted_output = format_with_line_breaks(output_text)
+    st.markdown(formatted_output)
