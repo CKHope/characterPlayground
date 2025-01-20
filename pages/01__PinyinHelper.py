@@ -28,18 +28,17 @@ def convert_text(text):
             result.append(get_abbreviated_pinyin_with_color(char))
     return "".join(result)
 
-def count_chinese_chars(text):
-    return len([c for c in text if '\u4e00' <= c <= '\u9fff'])
+def count_characters(text):
+    # Count characters excluding spaces and punctuation
+    return len([char for char in text if char not in string.punctuation and not char.isspace()])
 
-def format_with_line_breaks_and_numbers(text, original_text):
+def format_with_line_breaks_and_numbers(text):
     # Split text into sentences
     sentences = re.split('([。！？\.\!\?][\s\n]*)', text)
-    original_sentences = re.split('([。！？\.\!\?][\s\n]*)', original_text)
     
     # Group sentences into chunks of 3 and add paragraph numbers
     formatted_text = ""
     current_group = []
-    current_original_group = []
     paragraph_number = 1
     
     # Custom CSS for paragraph numbers and character count
@@ -53,44 +52,35 @@ def format_with_line_breaks_and_numbers(text, original_text):
             margin-right: 5px;
         }
         .char-count {
-            background-color: #00008B;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            margin-right: 5px;
+            color: #666;
             font-size: 0.9em;
+            margin-right: 10px;
         }
         </style>
     """, unsafe_allow_html=True)
     
-    for i in range(0, len(sentences), 2):
+    for i in range(0, len(sentences), 2):  # Step by 2 because split keeps delimiters
         if i < len(sentences):
             current_sentence = sentences[i]
-            current_original_sentence = original_sentences[i] if i < len(original_sentences) else ""
-            
-            if i+1 < len(sentences):
+            if i+1 < len(sentences):  # Add the punctuation back
                 current_sentence += sentences[i+1]
-                if i+1 < len(original_sentences):
-                    current_original_sentence += original_sentences[i+1]
             
             current_group.append(current_sentence)
-            current_original_group.append(current_original_sentence)
             
             # When we have 3 sentences or it's the last group
             if len(current_group) == 3 or i >= len(sentences)-2:
-                # Count Chinese characters in original text for this group
-                char_count = count_chinese_chars(''.join(current_original_group))
+                group_text = ''.join(current_group)
+                char_count = count_characters(group_text)
                 
                 # Create paragraph number and character count with HTML styling
                 paragraph_mark = f'<span class="paragraph-number">P{paragraph_number:02d}</span>'
-                count_mark = f'<span class="char-count">{char_count}字</span>'
+                count_display = f'<span class="char-count">({char_count} chars)</span>'
                 
-                formatted_text += f"{paragraph_mark}{count_mark} {''.join(current_group)}<br><br>"
+                formatted_text += f"{paragraph_mark}{count_display}{group_text}<br><br>"
                 current_group = []
-                current_original_group = []
                 paragraph_number += 1
     
-    return formatted_text.strip()
+    return formatted_text.strip()  # Remove trailing whitespace
 
 # Create Streamlit interface
 st.title("Chinese to Abbreviated Pinyin Converter")
@@ -108,5 +98,5 @@ if input_text:
     
     # Display output with line breaks and styled paragraph numbers
     st.subheader("Result with line breaks (every 3 sentences):")
-    formatted_output = format_with_line_breaks_and_numbers(output_text, input_text)
-    st.markdown(formatted_output, unsafe_allsow_html=True)
+    formatted_output = format_with_line_breaks_and_numbers(output_text)
+    st.markdown(formatted_output, unsafe_allow_html=True)
