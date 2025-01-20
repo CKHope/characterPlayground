@@ -10,7 +10,7 @@ def get_abbreviated_pinyin_with_color_break(char):
     # Check if pinyin starts with zh, ch, sh
     if pin.startswith(('zh', 'ch', 'sh')):
         # Remove the :blue[] syntax and use HTML span instead
-        return f'<span style="color: 00FFFF">{pin[:2]}</span>'
+        return f'<span style="color: "00FFFF"">{pin[:2]}</span>'
     # If starts with vowel, return first letter
     elif pin[0] in 'aeiou':
         return pin[0]
