@@ -28,23 +28,31 @@ def convert_text(text):
             result.append(get_abbreviated_pinyin_with_color(char))
     return "".join(result)
 
-def format_with_line_breaks(text):
-    # Split text into sentences (looking for period, question mark, or exclamation mark followed by space or newline)
+def format_with_line_breaks_and_numbers(text):
+    # Split text into sentences
     sentences = re.split('([。！？\.\!\?][\s\n]*)', text)
     
-    # Rejoin sentences and add line break after every 3 sentences
+    # Group sentences into chunks of 3 and add paragraph numbers
     formatted_text = ""
+    current_group = []
+    paragraph_number = 1
+    
     for i in range(0, len(sentences), 2):  # Step by 2 because split keeps delimiters
         if i < len(sentences):
-            formatted_text += sentences[i]
+            current_sentence = sentences[i]
             if i+1 < len(sentences):  # Add the punctuation back
-                formatted_text += sentences[i+1]
+                current_sentence += sentences[i+1]
             
-            # Add double line break after every 3 sentences
-            if (i//2 + 1) % 3 == 0 and i < len(sentences)-2:
-                formatted_text += "\n\n"
+            current_group.append(current_sentence)
+            
+            # When we have 3 sentences or it's the last group
+            if len(current_group) == 3 or i >= len(sentences)-2:
+                paragraph_mark = f"P{paragraph_number:02d}: "  # Format as P01, P02, etc.
+                formatted_text += paragraph_mark + "".join(current_group) + "\n\n"
+                current_group = []
+                paragraph_number += 1
     
-    return formatted_text
+    return formatted_text.strip()  # Remove trailing whitespace
 
 # Create Streamlit interface
 st.title("Chinese to Abbreviated Pinyin Converter")
@@ -60,7 +68,7 @@ if input_text:
     st.subheader("Result:")
     st.markdown(output_text)
     
-    # Display output with line breaks after every 3 sentences
+    # Display output with line breaks and paragraph numbers
     st.subheader("Result with line breaks (every 3 sentences):")
-    formatted_output = format_with_line_breaks(output_text)
+    formatted_output = format_with_line_breaks_and_numbers(output_text)
     st.markdown(formatted_output)
