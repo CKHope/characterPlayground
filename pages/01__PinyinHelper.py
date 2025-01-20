@@ -56,6 +56,10 @@ def format_with_line_breaks_and_numbers(text):
             font-size: 0.9em;
             margin-right: 10px;
         }
+        .total-count {
+            color: #8B0000;
+            font-weight: bold;
+        }
         </style>
     """, unsafe_allow_html=True)
     
@@ -96,7 +100,10 @@ if input_text:
     st.subheader("Result:")
     st.markdown(output_text)
     
+    # Calculate total character count
+    total_chars = count_characters(input_text)
+    
     # Display output with line breaks and styled paragraph numbers
-    st.subheader("Result with line breaks (every 3 sentences):")
+    st.markdown(f"### Recite helper - Pinyin <span class='total-count'>({total_chars} chars)</span>", unsafe_allow_html=True)
     formatted_output = format_with_line_breaks_and_numbers(output_text)
     st.markdown(formatted_output, unsafe_allow_html=True)
