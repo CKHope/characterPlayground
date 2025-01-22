@@ -13,6 +13,22 @@ def count_chinese_characters(text: str) -> int:
     """Counts the number of Chinese characters in the input text."""
     return len([char for char in text if '\u4e00' <= char <= '\u9fff'])
 
+def get_abbreviated_pinyin_with_color(char: str) -> str:
+    """Returns the abbreviated Pinyin of a character with color formatting for double consonants."""
+    # Get pinyin for the character (taking first pronunciation)
+    pin = pinyin(char, style=Style.NORMAL)[0][0]
+    
+    # Check if pinyin starts with zh, ch, sh
+    if pin.startswith(('zh', 'ch', 'sh')):
+        # Return the first two letters in blue color using HTML span
+        return f'<span style="color: DarkTurquoise">{pin[:2]}</span>'
+    # If starts with vowel, return first letter
+    elif pin[0] in 'aeiou':
+        return pin[0]
+    # Otherwise return first consonant
+    else:
+        return pin[0]
+
 def inject_css():
     # Injects CSS styles for the Streamlit interface
     css_styles = """
