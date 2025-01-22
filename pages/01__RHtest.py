@@ -9,6 +9,10 @@ from utils import returnCharRadical
 # Configure logging settings with timestamps
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
+def count_chinese_characters(text: str) -> int:
+    """Counts the number of Chinese characters in the input text."""
+    return len([char for char in text if '\u4e00' <= char <= '\u9fff'])
+
 def inject_css():
     # Injects CSS styles for the Streamlit interface
     css_styles = """
