@@ -1,5 +1,67 @@
 import streamlit as st
 
+# Constants for default values
+DEFAULT_TEXT_COLOR = "#000000"
+DEFAULT_BORDER_COLOR = "#ffbebe"
+DEFAULT_BORDER_THICKNESS = "0.5px"
+DEFAULT_FONT_FAMILY = "FangSong"
+DEFAULT_GRID_SIZE = 200
+DEFAULT_FONT_WEIGHT = "lighter"
+DEFAULT_UNIQUE_OPTION = "Unique Characters Only"
+
+# Function to generate CSS styles
+def generate_css(grid_size, font_size, font_weight, text_color, font_family, border_thickness, border_color):
+    return f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap'); /* For fallback Chinese fonts */
+    
+    .grid-container {{
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax({grid_size}px, 1fr));
+        gap: 10px;
+        justify-items: center;
+        align-items: center;
+    }}
+    
+    .grid-item {{
+        width: {grid_size}px;
+        height: {grid_size}px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* Divide into 3x3 squares */
+        grid-template-rows: repeat(3, 1fr);
+        border: 1px solid rgb(0, 0, 0); /* Black border */
+        background-color: #f9f9f9; /* Light grey background */
+        position: relative; /* For centering the character */
+    }}
+    
+    .grid-item .character {{
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: {font_size}px; /* Dynamic font size */
+        font-weight: {font_weight}; /* Dynamic font weight */
+        color: {text_color}; /* Dynamic text color */
+        font-family: {font_family}, 'Noto Sans SC', sans-serif; /* Dynamic font family */
+    }}
+    
+    .grid-item .sub-item {{
+        border: {border_thickness} solid {border_color}; /* Dynamic border thickness and color */
+    }}
+    </style>
+    """
+
+# Function to validate border thickness input
+def validate_border_thickness(thickness):
+    try:
+        if not thickness.endswith("px"):
+            thickness += "px"
+        float(thickness.replace("px", ""))  # Check if it's a valid number
+    except ValueError:
+        st.error("Invalid border thickness! Please enter a valid number followed by 'px' (e.g., '0.5px').")
+        return DEFAULT_BORDER_THICKNESS  # Fallback to default
+    return thickness
+
 # App title
 st.title("Chinese Text Grid with Adjustable Grid Item and Font Size")
 
@@ -17,7 +79,7 @@ grid_size = st.selectbox(
 font_size = int((grid_size * 45) / 50)  # Calculate font size with a ratio of 45/50
 
 # Step 4: Text color input
-text_color = st.color_picker("Enter Text Color (name or hex code):", value="#000000")  # Default to black
+text_color = st.color_picker("Enter Text Color (name or hex code):", value=DEFAULT_TEXT_COLOR)
 
 # Step 5: Font family selection (default set to FangSong)
 font_family = st.selectbox(
@@ -43,21 +105,14 @@ unique_option = st.radio(
 # Step 8: Border thickness input for sub-items (allows fractional values like 0.5px)
 border_thickness = st.text_input(
     "Enter Border Thickness (px):",
-    value="0.5px"  # Default to 0.5px
+    value=DEFAULT_BORDER_THICKNESS
 )
 
 # Validate and sanitize border thickness input
-try:
-    # Ensure the input ends with 'px' and is a valid number
-    if not border_thickness.endswith("px"):
-        border_thickness += "px"
-    float(border_thickness.replace("px", ""))  # Check if it's a valid number
-except ValueError:
-    st.error("Invalid border thickness! Please enter a valid number followed by 'px' (e.g., '0.5px').")
-    border_thickness = "0.5px"  # Fallback to default
+border_thickness = validate_border_thickness(border_thickness)
 
 # Step 9: Border color input for sub-items
-border_color = st.color_picker("Enter Border Color (name or hex code):", value="#ffbebe")  # Default to red semi-transparent
+border_color = st.color_picker("Enter Border Color (name or hex code):", value=DEFAULT_BORDER_COLOR)
 
 # Step 10: Display the text as a grid with styled tiles
 if user_input:
@@ -68,49 +123,11 @@ if user_input:
     else:
         characters = list(user_input.replace("\n", ""))  # Keep all characters and remove line breaks
     
-    # Define CSS for the grid and nested grid styling
-    st.markdown(
-        f"""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap'); /* For fallback Chinese fonts */
-        
-        .grid-container {{
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax({grid_size}px, 1fr));
-            gap: 10px;
-            justify-items: center;
-            align-items: center;
-        }}
-        
-        .grid-item {{
-            width: {grid_size}px;
-            height: {grid_size}px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* Divide into 3x3 squares */
-            grid-template-rows: repeat(3, 1fr);
-            border: 1px solid rgb(0, 0, 0); /* Black border */
-            background-color: #f9f9f9; /* Light grey background */
-            position: relative; /* For centering the character */
-        }}
-        
-        .grid-item .character {{
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: {font_size}px; /* Dynamic font size */
-            font-weight: {font_weight}; /* Dynamic font weight */
-            color: {text_color}; /* Dynamic text color */
-            font-family: {font_family}, 'Noto Sans SC', sans-serif; /* Dynamic font family */
-        }}
-        
-        .grid-item .sub-item {{
-            border: {border_thickness} solid {border_color}; /* Dynamic border thickness and color */
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    # Generate CSS styles
+    css_styles = generate_css(grid_size, font_size, font_weight, text_color, font_family, border_thickness, border_color)
+    
+    # Render CSS in Streamlit
+    st.markdown(css_styles, unsafe_allow_html=True)
     
     # Generate the HTML grid with nested grids and centered character
     grid_html = '<div class="grid-container">'
