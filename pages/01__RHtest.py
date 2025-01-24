@@ -4,6 +4,8 @@ import string
 import re
 from utils import returnCharRadical
 import time
+from gtts import gTTS  # For audio pronunciation
+import base64
 
 # Caching results for repeated conversions
 pinyin_cache = {}
@@ -25,7 +27,7 @@ def get_abbreviated_pinyin_with_color_break(char):
         pinyin_cache[char] = result
         return result
     except IndexError:
-        return char  # Return the character itself if conversion fails
+        return f'<span style="color: red;">{char}</span>'  # Highlight invalid characters
 
 def get_abbreviated_pinyin_with_color(char):
     """Get abbreviated pinyin with Streamlit color formatting."""
@@ -43,7 +45,7 @@ def get_abbreviated_pinyin_with_color(char):
         pinyin_cache[char] = result
         return result
     except IndexError:
-        return char
+        return f':red[{char}]'  # Highlight invalid characters
 
 def convert_text(text, type=1):
     """Convert text based on the specified type: Pinyin, Radical, or Original."""
@@ -120,12 +122,12 @@ def format_with_line_breaks_and_numbers(text, original_text, sentences_per_group
         </style>
     """, unsafe_allow_html=True)
     
-    for i in range(0, len(sentences), 2):
+    for i in range(0, len(sentences), 2): 
         if i < len(sentences):
             current_sentence = sentences[i]
             current_original_sentence = original_sentences[i] if i < len(original_sentences) else ""
             
-            if i+1 < len(sentences):
+            if i+1 < len(sentences):  
                 current_sentence += sentences[i+1]
                 if i+1 < len(original_sentences):
                     current_original_sentence += original_sentences[i+1]
@@ -149,21 +151,34 @@ def format_with_line_breaks_and_numbers(text, original_text, sentences_per_group
     
     return formatted_text.strip()
 
+def generate_audio(text):
+    """Generate audio pronunciation for the given text."""
+    tts = gTTS(text, lang='zh-cn')
+    audio_file = "pronunciation.mp3"
+    tts.save(audio_file)
+    
+    with open(audio_file, "rb") as file:
+        data = file.read()
+        b64_audio = base64.b64encode(data).decode()
+    
+    audio_html = f"""
+        <audio controls>
+            <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+            Your browser does not support the audio element.
+        </audio>
+    """
+    return audio_html
+
 # Streamlit Interface
 st.title("Chinese to Abbreviated Pinyin Converter")
+
+st.sidebar.title("Settings")
+sentences_per_group = st.sidebar.slider("Sentences per group:", min_value=1, max_value=5, value=3)
+output_type = st.sidebar.radio("Select Output Type:", ["Pinyin", "Radical"], index=0)
 
 input_text = st.text_area("Enter Chinese text:", "")
 
 if input_text.strip():
-    st.sidebar.title("Settings")
-    
-    # Dynamic sentence grouping slider
-    sentences_per_group = st.sidebar.slider("Sentences per group:", min_value=1, max_value=5, value=3)
-    
-    # Output type selection
-    output_type = st.sidebar.radio("Select Output Type:", ["Pinyin", "Radical"], index=0)
-    
-    # Timer for performance monitoring
     start_time = time.time()
     
     type_mapping = {"Pinyin": 1, "Radical": 2}
@@ -175,8 +190,13 @@ if input_text.strip():
     total_chars = count_chinese_characters(input_text)
     
     st.markdown(f"### Recite Helper ({total_chars} chars)")
+    
     formatted_output = format_with_line_breaks_and_numbers(output_text, input_text, sentences_per_group)
     st.markdown(formatted_output, unsafe_allow_html=True)
     
     elapsed_time = time.time() - start_time
     st.sidebar.write(f"Processing Time: {elapsed_time:.2f} seconds")
+    
+    st.markdown("### Audio Pronunciation")
+    audio_html = generate_audio(input_text)
+    st.markdown(audio_html, unsafe_allow_html=True)
