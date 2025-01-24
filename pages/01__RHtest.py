@@ -3,6 +3,7 @@ from pypinyin import pinyin, Style
 import string
 import re
 from utils import returnCharRadical
+import time
 
 # Caching results for repeated conversions
 pinyin_cache = {}
@@ -154,7 +155,16 @@ st.title("Chinese to Abbreviated Pinyin Converter")
 input_text = st.text_area("Enter Chinese text:", "")
 
 if input_text.strip():
-    output_type = st.radio("Select Output Type:", ["Pinyin", "Radical"], index=0)
+    st.sidebar.title("Settings")
+    
+    # Dynamic sentence grouping slider
+    sentences_per_group = st.sidebar.slider("Sentences per group:", min_value=1, max_value=5, value=3)
+    
+    # Output type selection
+    output_type = st.sidebar.radio("Select Output Type:", ["Pinyin", "Radical"], index=0)
+    
+    # Timer for performance monitoring
+    start_time = time.time()
     
     type_mapping = {"Pinyin": 1, "Radical": 2}
     output_text = convert_text(input_text, type_mapping[output_type])
@@ -165,5 +175,8 @@ if input_text.strip():
     total_chars = count_chinese_characters(input_text)
     
     st.markdown(f"### Recite Helper ({total_chars} chars)")
-    formatted_output = format_with_line_breaks_and_numbers(output_text, input_text)
+    formatted_output = format_with_line_breaks_and_numbers(output_text, input_text, sentences_per_group)
     st.markdown(formatted_output, unsafe_allow_html=True)
+    
+    elapsed_time = time.time() - start_time
+    st.sidebar.write(f"Processing Time: {elapsed_time:.2f} seconds")
