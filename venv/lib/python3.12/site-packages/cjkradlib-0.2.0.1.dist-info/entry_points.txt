@@ -1,0 +1,3 @@
+[console_scripts]
+cjkrad=cjkradlib.__main__:main
+

@@ -1,207 +1,205 @@
-import logging
-import unittest
 import streamlit as st
+from pypinyin import pinyin, Style
 import string
 import re
-from pypinyin import pinyin, Style
 from utils import returnCharRadical
+import time
+from gtts import gTTS
+import base64
+from io import BytesIO
 
-# Configure logging settings with timestamps
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+# Caching results for repeated conversions
+pinyin_cache = {}
+radical_cache = {}
 
-def count_chinese_characters(text: str) -> int:
-    """Counts the number of Chinese characters in the input text."""
-    return len([char for char in text if '\u4e00' <= char <= '\u9fff'])
+@st.cache_data
+def get_pinyin(char):
+    """Retrieve or compute the normal pinyin for a character, caching the result."""
+    if char in pinyin_cache:
+        return pinyin_cache[char]
+    try:
+        pin = pinyin(char, style=Style.NORMAL)[0][0]
+        pinyin_cache[char] = pin
+        return pin
+    except IndexError:
+        return None
 
-def get_abbreviated_pinyin_with_color(char: str) -> str:
-    """Returns the abbreviated Pinyin of a character with color formatting for double consonants."""
-    # Get pinyin for the character (taking first pronunciation)
-    pin = pinyin(char, style=Style.NORMAL)[0][0]
-    
-    # Check if pinyin starts with zh, ch, sh
+def format_abbreviated_pinyin(pin, use_html=False):
+    """Apply abbreviated pinyin formatting, allowing either HTML or Streamlit syntax."""
+    if pin is None:
+        return '<span style="color: red;">?</span>' if use_html else ':red[?]'
     if pin.startswith(('zh', 'ch', 'sh')):
-        # Return the first two letters in blue color using HTML span
-        return f'<span style="color: DarkTurquoise">{pin[:2]}</span>'
-    # If starts with vowel, return first letter
+        return (
+            f'<span style="color: DarkTurquoise">{pin[:2]}</span>'
+            if use_html else f':blue[{pin[:2]}]'
+        )
     elif pin[0] in 'aeiou':
         return pin[0]
-    # Otherwise return first consonant
     else:
         return pin[0]
 
-def inject_css():
-    # Injects CSS styles for the Streamlit interface
-    css_styles = """
-        <style>
-        .paragraph-number {
-            background-color: #8B0000; /* Dark Red */
-            color: white; /* Text color */
-            padding: 4px 6px; /* Padding */
-            border-radius: 3px 0 0 3px; /* Rounded corners */
-        }
-        .char-count {
-            background-color: #00008B; /* Dark Blue */
-            color: white; /* Text color */
-            padding: 4px 6px; /* Padding */
-            border-radius: 0 3px 3px 0; /* Rounded corners */
-            margin-right: 10px; /* Margin */
-        }
-        .total-count {
-            color: #8B0000; /* Dark Red */
-            font-weight: bold; /* Bold text */
-        }
-        .label-group {
-           display: inline-flex; /* Flex layout */
-           margin-right: 10px; /* Margin */
-           align-items: center; /* Center items vertically */
-           height: 20px; /* Height for alignment */
-        }
-        </style>
-    """
-    st.markdown(css_styles, unsafe_allow_html=True)
-
-def validate_input(text: str) -> bool:
-    """Validates if the input text contains valid Chinese characters."""
-    if not text.strip():
-        st.error("Input cannot be empty.")
-        return False
-    if not any('\u4e00' <= char <= '\u9fff' for char in text):
-        st.error("Input must contain at least one Chinese character.")
-        return False
-    return True
-
-@st.cache_data
-def convert_text(text: str, conversion_type: str = 'regular') -> str:
-    """Converts the input text based on the specified conversion type."""
-    logging.info(f"Converting text with type '{conversion_type}'")
-    
+def convert_text(text, style_type=1):
+    """Convert text to pinyin or radical based on style_type."""
+    # style_type: 0 -> streamlit color, 1 -> HTML color, 2 -> radical
     result = []
-    
     for char in text:
         if char in string.punctuation or char.isspace():
             result.append(char)
-        else:
-            try:
-                if conversion_type == 'pinyin_helper':
-                    result.append(get_abbreviated_pinyin_with_color(char))
-                elif conversion_type == 'radical':
-                    result.append(returnCharRadical(char))
-            except Exception as e:
-                logging.error(f"Error converting character '{char}': {e}")
-                st.error(f"Error processing character '{char}'. Please check your input.")
-    
+            continue
+
+        if style_type in [0, 1]:  # Pinyin
+            pin = get_pinyin(char)
+            if style_type == 0:
+                # Streamlit style
+                formatted = format_abbreviated_pinyin(pin, use_html=False)
+            else:
+                # HTML style
+                formatted = format_abbreviated_pinyin(pin, use_html=True)
+            result.append(formatted)
+        elif style_type == 2:
+            # Radical
+            if char in radical_cache:
+                result.append(radical_cache[char])
+            else:
+                rad = returnCharRadical(char)
+                radical_cache[char] = rad
+                result.append(rad)
     return "".join(result)
 
-def format_with_line_breaks_and_numbers(text: str, original_text: str) -> str:
+def count_chinese_characters(text):
+    """Count only Chinese characters in the given text."""
+    return sum(1 for char in text if '\u4e00' <= char <= '\u9fff')
+
+def format_with_line_breaks_and_numbers(text, original_text, sentences_per_group=3):
+    """Format text into groups of sentences with paragraph numbers and character counts."""
     sentences = re.split('([。！？\.\!\?][\s\n]*)', text)
     original_sentences = re.split('([。！？\.\!\?][\s\n]*)', original_text)
-    
+
     formatted_text = ""
     current_group = []
     current_original_group = []
     paragraph_number = 1
-    
-    for i in range(0, len(sentences), 2):  
+
+    st.markdown(
+        """
+        <style>
+        .paragraph-number {
+            background-color: #8B0000;
+            color: white;
+            padding: 4px 6px;
+            border-radius: 3px 0 0 3px;
+            margin-right: 0;
+            display: inline-flex;
+            align-items: center;
+            height: 20px;
+            line-height: 20px;
+            font-size: 0.9em;
+        }
+        .char-count {
+            background-color: #00008B;
+            color: white;
+            padding: 4px 6px;
+            border-radius: 0 3px 3px 0;
+            margin-right: 10px;
+            font-size: 0.9em;
+            display: inline-flex;
+            align-items: center;
+            width: 70px;
+            justify-content: center;
+            height: 20px;
+            line-height: 20px;
+        }
+        .total-count {
+            color: #8B0000;
+            font-weight: bold;
+        }
+        .label-group {
+            display: inline-flex;
+            margin-right: 10px;
+            align-items: center;
+            height: 20px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    for i in range(0, len(sentences), 2):
         if i < len(sentences):
             current_sentence = sentences[i]
             current_original_sentence = original_sentences[i] if i < len(original_sentences) else ""
-            
-            if i + 1 < len(sentences):  
-                current_sentence += sentences[i + 1]
+
+            if i + 1 < len(sentences):
+                current_sentence += sentences[i+1]
                 if i + 1 < len(original_sentences):
-                    current_original_sentence += original_sentences[i + 1]
-            
+                    current_original_sentence += original_sentences[i+1]
+
             current_group.append(current_sentence)
             current_original_group.append(current_original_sentence)
-            
-            if len(current_group) == 3 or i >= len(sentences) - 2:
+
+            if len(current_group) == sentences_per_group or i >= len(sentences) - 2:
                 group_text = ''.join(current_group)
                 original_group_text = ''.join(current_original_group)
                 char_count = count_chinese_characters(original_group_text)
-                
-                formatted_text += f"""<span class="label-group">
-                    <span class="paragraph-number">P{paragraph_number:02d}</span>
-                    <span class="char-count">{char_count} chars</span>
-                </span>{group_text}<br><br>"""
-                
-                current_group.clear()  
-                current_original_group.clear()  
-                paragraph_number += 1
-    
-    return formatted_text.strip()  
 
-# Create Streamlit interface to interact with the converter tool
+                formatted_text += f"""<span class="label-group">
+                    <span class="paragraph-number">P{paragraph_number:02d}</span
+                    ><span class="char-count">{char_count} chars</span>
+                </span>{group_text}<br><br>"""
+
+                current_group.clear()
+                current_original_group.clear()
+                paragraph_number += 1
+
+    return formatted_text.strip()
+
+@st.cache_data
+def generate_audio(text):
+    """Generate audio pronunciation from memory instead of file output."""
+    if not text.strip():
+        return "No valid text to generate audio."
+    try:
+        tts = gTTS(text, lang='zh-cn')
+        audio_io = BytesIO()
+        tts.write_to_fp(audio_io)
+        audio_io.seek(0)
+        b64_audio = base64.b64encode(audio_io.read()).decode()
+        audio_html = f"""
+            <audio controls>
+                <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+                Your browser does not support the audio element.
+            </audio>
+        """
+        return audio_html
+    except Exception:
+        return "Error generating audio."
+
 st.title("Chinese to Abbreviated Pinyin Converter")
 
-# Inject CSS styles into the Streamlit application
-inject_css()
+st.sidebar.title("Settings")
+sentences_per_group = st.sidebar.slider("Sentences per group:", min_value=1, max_value=5, value=3)
+output_type = st.sidebar.radio("Select Output Type:", ["Pinyin", "Radical"], index=0)
 
-# Input text area for user to enter Chinese text
 input_text = st.text_area("Enter Chinese text:", "")
 
-if validate_input(input_text):
-    with st.spinner('Processing...'):
-        # Convert text for Result section using type='regular' (regular output)
-        output_text = convert_text(input_text, 'regular')
-        
-        st.subheader("Result:")
-        st.markdown(output_text, unsafe_allow_html=True)
-        
-        # Convert text for Pinyin helper using type='pinyin_helper' 
-        output_text_pinyin = convert_text(input_text, 'pinyin_helper')
-        
-        total_chars = count_chinese_characters(input_text)  
-        
-        st.markdown(f"### Recite helper - Pinyin <span class='total-count'>({total_chars} chars)</span>", unsafe_allow_html=True)
-        
-        formatted_output = format_with_line_breaks_and_numbers(output_text_pinyin, input_text)
-        
-        st.markdown(formatted_output, unsafe_allow_html=True)
-        
-        # Convert text for Radical helper using type='radical' 
-        output_text_radical = convert_text(input_text, 'radical')
+if input_text.strip():
+    start_time = time.time()
 
-        st.markdown(f"### Recite helper - Radical <span class='total-count'>({total_chars} chars)</span>", unsafe_allow_html=True)
+    type_mapping = {"Pinyin": 1, "Radical": 2}
+    output_text = convert_text(input_text, type_mapping[output_type])
 
-        formatted_output_radical = format_with_line_breaks_and_numbers(output_text_radical, input_text)
-        
-        st.markdown(formatted_output_radical, unsafe_allow_html=True)
+    st.subheader(f"Converted Text ({output_type}):")
+    st.markdown(output_text, unsafe_allow_html=True)
 
-# Reset button to clear inputs and outputs
-if st.button('Reset'):
-    input_text = ""
-    st.experimental_rerun()  # Rerun the script to reset the state
+    total_chars = count_chinese_characters(input_text)
+    st.markdown(f"### Recite Helper ({total_chars} chars)")
 
-# Download button for results with format selection
-download_format = st.selectbox("Choose download format:", ["TXT", "CSV"])
+    formatted_output = format_with_line_breaks_and_numbers(output_text, input_text, sentences_per_group)
+    st.markdown(formatted_output, unsafe_allow_html=True)
 
-if st.button('Download Results'):
-    if download_format == "CSV":
-        results_to_download = "Original Text,Converted Text\n"
-        results_to_download += f"{input_text},{output_text}\n"
-    else:
-        results_to_download = f"Original Text:\n{input_text}\n\nConverted Text:\n{output_text}\n"
-    
-    # Create a download link for results
-    st.download_button(
-        label="Download Results",
-        data=results_to_download,
-        file_name=f'conversion_results.{download_format.lower()}',
-        mime='text/csv' if download_format == "CSV" else 'text/plain'
-    )
+    elapsed_time = time.time() - start_time
+    st.sidebar.write(f"Processing Time: {elapsed_time:.2f} seconds")
 
-# Unit Tests
-class TestChineseConverter(unittest.TestCase):
-
-    def test_count_chinese_characters(self):
-        self.assertEqual(count_chinese_characters("汉字"), 2)
-        self.assertEqual(count_chinese_characters("Hello!"), 0)
-        self.assertEqual(count_chinese_characters("汉字Hello"), 2)
-
-    def test_validate_input(self):
-        self.assertTrue(validate_input("汉字"))
-        self.assertFalse(validate_input(""))
-        self.assertFalse(validate_input("Hello!"))
-
-if __name__ == '__main__':
-    unittest.main()
+    st.markdown("### Audio Pronunciation")
+    audio_html = generate_audio(input_text)
+    st.markdown(audio_html, unsafe_allow_html=True)
