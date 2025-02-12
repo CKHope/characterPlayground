@@ -5,3 +5,4 @@ hanzipy
 cjkradlib
 pinyin
 pydub
+pycccedict
