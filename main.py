@@ -84,7 +84,7 @@ text_color = st.color_picker("Enter Text Color (name or hex code):", value=DEFAU
 # Step 5: Font family selection (default set to FangSong)
 font_family = st.selectbox(
     "Select Font Style:",
-    options=["Arial", "Courier New", "Georgia", "Times New Roman", "Verdana", "SimHei", "KaiTi", "FangSong", "LiSu","TW-MOE-Li Regular"],
+    options=["Arial", "Courier New", "Georgia", "Times New Roman", "Verdana", "SimHei", "KaiTi", "FangSong", "LiSu","TW-MOE-Li"],
     index=7,  # Default to FangSong
 )
 
