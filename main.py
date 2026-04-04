@@ -53,7 +53,7 @@ if "settings_loaded" not in st.session_state:
 # Function to generate CSS styles
 def generate_css(grid_size, font_size, font_weight, text_color, font_family, border_thickness, border_color, grid_style):
     
-    # Rice Grid uses linear gradients
+    # Grid background lines based on style
     rice_grid_css = ""
     if grid_style == "Rice Grid (米字格)":
         rice_grid_css = f"""
@@ -62,6 +62,12 @@ def generate_css(grid_size, font_size, font_weight, text_color, font_family, bor
             linear-gradient(to right, transparent 49.5%, {border_color} 49.5%, {border_color} 50.5%, transparent 50.5%),
             linear-gradient(to top right, transparent 49.7%, {border_color} 49.7%, {border_color} 50.3%, transparent 50.3%),
             linear-gradient(to bottom right, transparent 49.7%, {border_color} 49.7%, {border_color} 50.3%, transparent 50.3%);
+        """
+    elif grid_style == "Field Grid (田字格)":
+        rice_grid_css = f"""
+        background-image: 
+            linear-gradient(to bottom, transparent 49.5%, {border_color} 49.5%, {border_color} 50.5%, transparent 50.5%),
+            linear-gradient(to right, transparent 49.5%, {border_color} 49.5%, {border_color} 50.5%, transparent 50.5%);
         """
     
     return f"""
@@ -130,7 +136,7 @@ user_input = st.text_area("Enter Chinese text:", key="user_input", on_change=sav
 # Step 2: Grid Type selection
 grid_style = st.selectbox(
     "Select Grid Style:",
-    options=["Rice Grid (米字格)", "9-Square Grid (井字格)", "Empty Grid"],
+    options=["Rice Grid (米字格)", "Field Grid (田字格)", "9-Square Grid (井字格)", "Empty Grid"],
     key="grid_style",
     on_change=save_settings
 )
@@ -183,11 +189,24 @@ with col2:
 
 # Render results
 if user_input:
+    # Character list based on selection
+    all_chars = [char for char in user_input if not char.isspace()]
     if unique_option == "Unique Characters Only":
         seen = set()
-        characters = [char for char in user_input if not (char in seen or seen.add(char)) and not char.isspace()]
+        characters = [char for char in all_chars if not (char in seen or seen.add(char))]
     else:
-        characters = [char for char in user_input.replace("\n", "") if not char.isspace()]
+        characters = all_chars
+
+    # Statistics Section
+    st.subheader("Character Statistics")
+    col_stat1, col_stat2 = st.columns(2)
+    with col_stat1:
+        st.metric("Total Characters", len(all_chars))
+    with col_stat2:
+        st.metric("Unique Characters", len(set(all_chars)))
+    
+    st.divider()
+
     
     css_styles = generate_css(grid_size, font_size, font_weight, text_color, font_family, border_thickness, border_color, grid_style)
     st.markdown(css_styles, unsafe_allow_html=True)
