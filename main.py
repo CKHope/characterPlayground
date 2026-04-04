@@ -1,19 +1,72 @@
 import streamlit as st
+import json
+import os
 
 # Constants for default values
-DEFAULT_TEXT_COLOR = "#000000"
-DEFAULT_BORDER_COLOR = "#ffbebe"
-DEFAULT_BORDER_THICKNESS = "0.5px"
-DEFAULT_FONT_FAMILY = "FangSong"
-DEFAULT_GRID_SIZE = 200
-DEFAULT_FONT_WEIGHT = "lighter"
-DEFAULT_UNIQUE_OPTION = "Unique Characters Only"
+SETTINGS_FILE = "settings.json"
+DEFAULT_SETTINGS = {
+    "user_input": "",
+    "grid_size": 200,
+    "text_color": "#000000",
+    "font_family": "FangSong",
+    "font_weight": "normal",
+    "unique_option": "Unique Characters Only",
+    "border_thickness": "0.5px",
+    "border_color": "#ffbebe",
+    "grid_style": "Rice Grid (米字格)"
+}
+
+# Persistence functions
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                # Merge with defaults for safety
+                return {**DEFAULT_SETTINGS, **saved}
+        except:
+            pass
+    return DEFAULT_SETTINGS
+
+def save_settings():
+    settings = {
+        "user_input": st.session_state.get("user_input", ""),
+        "grid_size": st.session_state.get("grid_size", 200),
+        "text_color": st.session_state.get("text_color", "#000000"),
+        "font_family": st.session_state.get("font_family", "FangSong"),
+        "font_weight": st.session_state.get("font_weight", "normal"),
+        "unique_option": st.session_state.get("unique_option", "Unique Characters Only"),
+        "border_thickness": st.session_state.get("border_thickness", "0.5px"),
+        "border_color": st.session_state.get("border_color", "#ffbebe"),
+        "grid_style": st.session_state.get("grid_style", "Rice Grid (米字格)")
+    }
+    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=4, ensure_ascii=False)
+
+# Initialize session state from file
+if "settings_loaded" not in st.session_state:
+    saved_settings = load_settings()
+    for key, value in saved_settings.items():
+        st.session_state[key] = value
+    st.session_state["settings_loaded"] = True
 
 # Function to generate CSS styles
-def generate_css(grid_size, font_size, font_weight, text_color, font_family, border_thickness, border_color):
+def generate_css(grid_size, font_size, font_weight, text_color, font_family, border_thickness, border_color, grid_style):
+    
+    # Rice Grid uses linear gradients
+    rice_grid_css = ""
+    if grid_style == "Rice Grid (米字格)":
+        rice_grid_css = f"""
+        background-image: 
+            linear-gradient(to bottom, transparent 49.5%, {border_color} 49.5%, {border_color} 50.5%, transparent 50.5%),
+            linear-gradient(to right, transparent 49.5%, {border_color} 49.5%, {border_color} 50.5%, transparent 50.5%),
+            linear-gradient(to top right, transparent 49.7%, {border_color} 49.7%, {border_color} 50.3%, transparent 50.3%),
+            linear-gradient(to bottom right, transparent 49.7%, {border_color} 49.7%, {border_color} 50.3%, transparent 50.3%);
+        """
+    
     return f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap'); /* For fallback Chinese fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap');
     
     .grid-container {{
         display: grid;
@@ -26,12 +79,10 @@ def generate_css(grid_size, font_size, font_weight, text_color, font_family, bor
     .grid-item {{
         width: {grid_size}px;
         height: {grid_size}px;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr); /* Divide into 3x3 squares */
-        grid-template-rows: repeat(3, 1fr);
-        border: 1px solid rgb(0, 0, 0); /* Black border */
-        background-color: #f9f9f9; /* Light grey background */
-        position: relative; /* For centering the character */
+        border: 1px solid rgb(0, 0, 0);
+        background-color: #ffffff;
+        position: relative;
+        {rice_grid_css}
     }}
     
     .grid-item .character {{
@@ -39,14 +90,22 @@ def generate_css(grid_size, font_size, font_weight, text_color, font_family, bor
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: {font_size}px; /* Dynamic font size */
-        font-weight: {font_weight}; /* Dynamic font weight */
-        color: {text_color}; /* Dynamic text color */
-        font-family: {font_family}, 'Noto Sans SC', sans-serif; /* Dynamic font family */
+        font-size: {font_size}px;
+        font-weight: {font_weight};
+        color: {text_color};
+        font-family: {font_family}, 'Noto Sans SC', sans-serif;
+        z-index: 2;
     }}
     
-    .grid-item .sub-item {{
-        border: {border_thickness} solid {border_color}; /* Dynamic border thickness and color */
+    /* 9-Square Grid Specific */
+    .nine-square-grid {{
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+    }}
+    
+    .sub-item {{
+        border: {border_thickness} solid {border_color};
     }}
     </style>
     """
@@ -56,88 +115,95 @@ def validate_border_thickness(thickness):
     try:
         if not thickness.endswith("px"):
             thickness += "px"
-        float(thickness.replace("px", ""))  # Check if it's a valid number
+        float(thickness.replace("px", ""))
     except ValueError:
-        st.error("Invalid border thickness! Please enter a valid number followed by 'px' (e.g., '0.5px').")
-        return DEFAULT_BORDER_THICKNESS  # Fallback to default
+        st.error("Invalid border thickness! Please enter a valid number followed by 'px'.")
+        return DEFAULT_SETTINGS["border_thickness"]
     return thickness
 
 # App title
-st.title("Chinese Text Grid with Adjustable Grid Item and Font Size")
+st.title("Chinese Text Grid with Adjustable Settings")
 
-# Step 1: Input Chinese text from the user
-user_input = st.text_area("Enter Chinese text:", height=100, placeholder="输入中文文本...")
+# Step 1: Input Chinese text
+user_input = st.text_area("Enter Chinese text:", key="user_input", on_change=save_settings, height=100, placeholder="输入中文文本...")
 
-# Step 2: Grid size slider (width = height, default 200)
+# Step 2: Grid Type selection
+grid_style = st.selectbox(
+    "Select Grid Style:",
+    options=["Rice Grid (米字格)", "9-Square Grid (井字格)", "Empty Grid"],
+    key="grid_style",
+    on_change=save_settings
+)
+
+# Step 3: Grid size slider
 grid_size = st.selectbox(
-    "Select Grid Item Width and Height (px):",
-    options=[50, 100, 150, 200],  # Predefined sizes
-    index=3,  # Default is 200
+    "Select Grid Item Size (px):",
+    options=[50, 100, 150, 200, 250, 300],
+    key="grid_size",
+    on_change=save_settings
 )
 
-# Step 3: Automatically adjust font size based on grid size
-font_size = int((grid_size * 45) / 50)  # Calculate font size with a ratio of 45/50
+# Step 4: Font size calculation
+font_size = int((grid_size * 45) / 50)
 
-# Step 4: Text color input
-text_color = st.color_picker("Enter Text Color (name or hex code):", value=DEFAULT_TEXT_COLOR)
+# Step 5: Text color
+text_color = st.color_picker("Text Color:", key="text_color", on_change=save_settings)
 
-# Step 5: Font family selection (default set to FangSong)
+# Step 6: Font family
 font_family = st.selectbox(
-    "Select Font Style:",
-    options=["Arial", "Courier New", "Georgia", "Times New Roman", "Verdana", "SimHei", "KaiTi", "FangSong", "LiSu","TW-MOE-Li","HanWangLiSuMedium"],
-    index=7,  # Default to FangSong
+    "Font Style:",
+    options=["Arial", "Courier New", "Georgia", "Times New Roman", "Verdana", "SimHei", "KaiTi", "FangSong", "LiSu", "TW-MOE-Li", "HanWangLiSuMedium"],
+    key="font_family",
+    on_change=save_settings
 )
 
-# Step 6: Font weight selection (default set to lighter)
+# Step 7: Font weight
 font_weight = st.selectbox(
-    "Select Font Weight:",
+    "Font Weight:",
     options=["normal", "bold", "lighter", "bolder", "100", "200", "300", "400", "500", "600", "700", "800", "900"],
-    index=0,  # Default to lighter
+    key="font_weight",
+    on_change=save_settings
 )
 
-# Step 7: Option to display unique characters only
+# Step 8: Display options
 unique_option = st.radio(
     "Display Options:",
     options=["All Characters", "Unique Characters Only"],
-    index=1,  # Default to "Unique Characters Only"
+    key="unique_option",
+    on_change=save_settings
 )
 
-# Step 8: Border thickness input for sub-items (allows fractional values like 0.5px)
-border_thickness = st.text_input(
-    "Enter Border Thickness (px):",
-    value=DEFAULT_BORDER_THICKNESS
-)
+# Step 9: Border settings
+col1, col2 = st.columns(2)
+with col1:
+    border_thickness = st.text_input("Border Thickness (px):", key="border_thickness", on_change=save_settings)
+    border_thickness = validate_border_thickness(border_thickness)
+with col2:
+    border_color = st.color_picker("Border Color:", key="border_color", on_change=save_settings)
 
-# Validate and sanitize border thickness input
-border_thickness = validate_border_thickness(border_thickness)
-
-# Step 9: Border color input for sub-items
-border_color = st.color_picker("Enter Border Color (name or hex code):", value=DEFAULT_BORDER_COLOR)
-
-# Step 10: Display the text as a grid with styled tiles
+# Render results
 if user_input:
-    # Process the input based on the selected option
     if unique_option == "Unique Characters Only":
         seen = set()
-        characters = [char for char in user_input if not (char in seen or seen.add(char))]  # Preserve order of unique characters
+        characters = [char for char in user_input if not (char in seen or seen.add(char)) and not char.isspace()]
     else:
-        characters = list(user_input.replace("\n", ""))  # Keep all characters and remove line breaks
+        characters = [char for char in user_input.replace("\n", "") if not char.isspace()]
     
-    # Generate CSS styles
-    css_styles = generate_css(grid_size, font_size, font_weight, text_color, font_family, border_thickness, border_color)
-    
-    # Render CSS in Streamlit
+    css_styles = generate_css(grid_size, font_size, font_weight, text_color, font_family, border_thickness, border_color, grid_style)
     st.markdown(css_styles, unsafe_allow_html=True)
     
-    # Generate the HTML grid with nested grids and centered character
     grid_html = '<div class="grid-container">'
     for char in characters:
-        grid_html += '<div class="grid-item">'  # Outer grid item with nested squares
-        for _ in range(9):  # Add nine sub-items inside each item for background
-            grid_html += '<div class="sub-item"></div>'
-        grid_html += f'<span class="character">{char}</span>'  # Centered character overlay
+        if grid_style == "9-Square Grid (井字格)":
+            grid_html += '<div class="grid-item nine-square-grid">'
+            for _ in range(9):
+                grid_html += '<div class="sub-item"></div>'
+        else:
+            grid_html += '<div class="grid-item">'
+        
+        grid_html += f'<span class="character">{char}</span>'
         grid_html += '</div>'
     grid_html += '</div>'
     
-    # Render the nested grid in Streamlit
     st.markdown(grid_html, unsafe_allow_html=True)
+
